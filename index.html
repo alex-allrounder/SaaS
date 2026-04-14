@@ -693,10 +693,13 @@
 
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-  // Simple form handler
-  function handleSubmit() {
+  // Form handler — sends email to Formspree
+  async function handleSubmit() {
     const input = document.querySelector('.cta-input');
+    const btn = document.querySelector('.cta-form .btn-primary');
     const email = input.value.trim();
+
+    // Validate email
     if (!email || !email.includes('@')) {
       input.style.borderColor = '#ef4444';
       input.setAttribute('placeholder', 'Please enter a valid email');
@@ -706,15 +709,59 @@
       }, 2000);
       return;
     }
-    // Replace with your form endpoint (Formspree, Netlify Forms, etc.)
-    const btn = document.querySelector('.cta-form .btn-primary');
-    btn.textContent = 'Thank you! ✓';
-    btn.style.background = '#4ADE80';
-    input.value = '';
-    setTimeout(() => {
-      btn.textContent = 'Book Consultation';
-      btn.style.background = '';
-    }, 3000);
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    btn.style.opacity = '0.7';
+
+    try {
+      const response = await fetch('https://formspree.io/f/xaqanbry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          _subject: 'New Consultation Request — ComplianceDocs',
+          message: 'New consultation booking request from: ' + email
+        })
+      });
+
+      if (response.ok) {
+        // Success
+        btn.textContent = 'Thank you! ✓';
+        btn.style.background = '#4ADE80';
+        btn.style.opacity = '1';
+        input.value = '';
+        setTimeout(() => {
+          btn.textContent = 'Book Consultation';
+          btn.style.background = '';
+          btn.disabled = false;
+        }, 3000);
+      } else {
+        // Server error
+        btn.textContent = 'Something went wrong';
+        btn.style.background = '#ef4444';
+        btn.style.opacity = '1';
+        setTimeout(() => {
+          btn.textContent = 'Book Consultation';
+          btn.style.background = '';
+          btn.disabled = false;
+        }, 3000);
+      }
+    } catch (error) {
+      // Network error
+      btn.textContent = 'Connection error';
+      btn.style.background = '#ef4444';
+      btn.style.opacity = '1';
+      setTimeout(() => {
+        btn.textContent = 'Book Consultation';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 3000);
+    }
   }
 
   // Enter key support
